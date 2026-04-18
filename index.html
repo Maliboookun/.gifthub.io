@@ -1,12 +1,486 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <link rel="stylesheet" href="stylesheet.css">
-    <meta charset="utf-8">
-    <title>Progate</title>
-  </head>
-  <body>
-    <h1 class="title">HTML & CSS の開発環境を用意しよう！</h1>
-    <p>自分のPCでWebページを開発する方法を学習しましょう!</p>
-  </body>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>POSレジ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --primary: #0d47a1;
+      --primary-dark: #002171;
+      --primary-light: #1565c0;
+      --accent: #42a5f5;
+      --danger: #c62828;
+      --bg: #e8eaf6;
+      --card: #ffffff;
+      --text: #1a237e;
+      --muted: #546e7a;
+      --border: #bbdefb;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .header-time { font-size: 12px; opacity: 0.85; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .status-online  { background: rgba(105,240,174,0.15); color: #69f0ae; }
+    .status-offline { background: rgba(239,83,80,0.15);  color: #ef5350; }
+    .status-online  .status-dot { background: #69f0ae; }
+    .status-offline .status-dot { background: #ef5350; }
+
+    /* ── Scan Section ── */
+    .scan-section {
+      background: var(--card); padding: 14px 14px 12px;
+      margin: 12px 12px 0; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .scan-row { display: flex; gap: 10px; align-items: center; }
+    .btn-scan {
+      background: var(--primary); color: white; border: none;
+      border-radius: 10px; padding: 0 18px; font-size: 15px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; min-height: 48px;
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .btn-scan:active { background: var(--primary-dark); transform: scale(0.97); }
+    .manual-input { display: flex; gap: 8px; flex: 1; }
+    .manual-input input {
+      flex: 1; border: 2px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; font-size: 15px; outline: none; min-height: 48px; color: var(--text);
+    }
+    .manual-input input:focus { border-color: var(--accent); }
+    .btn-add {
+      background: var(--accent); color: white; border: none;
+      border-radius: 10px; padding: 0 16px; font-size: 15px; font-weight: 600;
+      cursor: pointer; min-height: 48px; white-space: nowrap;
+    }
+    .btn-add:active { opacity: 0.8; transform: scale(0.97); }
+
+    /* ── Cart ── */
+    .cart-section {
+      flex: 1; margin: 12px 12px 0; background: var(--card);
+      border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .cart-header {
+      background: var(--primary-light); color: white;
+      padding: 11px 16px; font-size: 14px; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .cart-list { overflow-y: auto; flex: 1; min-height: 120px; max-height: calc(100vh - 390px); }
+    .cart-empty { padding: 36px 16px; text-align: center; color: var(--muted); font-size: 15px; }
+    .cart-item {
+      padding: 11px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-price { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .item-qty { display: flex; align-items: center; gap: 7px; }
+    .btn-qty {
+      width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary-light);
+      background: white; color: var(--primary); font-size: 18px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-qty:active { background: var(--primary); color: white; }
+    .qty-num { font-size: 16px; font-weight: 700; min-width: 26px; text-align: center; }
+    .item-subtotal { font-size: 15px; font-weight: 700; color: var(--primary); min-width: 68px; text-align: right; }
+    .btn-delete {
+      background: none; border: none; color: var(--danger); font-size: 20px;
+      cursor: pointer; padding: 4px; min-width: 32px; min-height: 32px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Checkout ── */
+    .checkout-section {
+      background: var(--card); padding: 14px 14px 18px;
+      margin: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .total-label { font-size: 16px; font-weight: 600; color: var(--muted); }
+    .total-amount { font-size: 30px; font-weight: 800; color: var(--primary); }
+    .tax-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+    .btn-checkout {
+      width: 100%; background: var(--primary); color: white; border: none;
+      border-radius: 12px; padding: 18px; font-size: 18px; font-weight: 700;
+      cursor: pointer; min-height: 56px; letter-spacing: 0.5px;
+    }
+    .btn-checkout:active { background: var(--primary-dark); transform: scale(0.98); }
+    .btn-checkout:disabled { background: #b0bec5; cursor: not-allowed; transform: none; }
+
+    /* ── Scanner Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.88); align-items: center; justify-content: center; flex-direction: column;
+    }
+    .modal-overlay.active { display: flex; }
+    .scanner-container { width: 100%; max-width: 400px; padding: 16px; }
+    #reader { border-radius: 12px; overflow: hidden; }
+    .btn-close-scanner {
+      background: white; color: var(--primary); border: none;
+      border-radius: 10px; padding: 14px 40px; font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 20px; min-height: 48px;
+    }
+
+    /* ── Receipt Modal ── */
+    .receipt-modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 16px;
+    }
+    .receipt-modal.active { display: flex; }
+    .receipt-card {
+      background: white; border-radius: 16px; padding: 24px;
+      width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .receipt-title { text-align: center; font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .receipt-date { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+    .receipt-divider { border: none; border-top: 2px dashed var(--border); margin: 14px 0; }
+    .receipt-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 5px 0; font-size: 14px; gap: 8px; }
+    .receipt-item-name { flex: 1; }
+    .receipt-item-detail { text-align: right; white-space: nowrap; }
+    .receipt-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); padding: 4px 0; }
+    .receipt-total { display: flex; justify-content: space-between; font-size: 22px; font-weight: 800; color: var(--primary); padding: 8px 0; }
+    .btn-close-receipt {
+      width: 100%; background: var(--primary); color: white; border: none;
+      border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 18px; min-height: 52px;
+    }
+    .btn-close-receipt:active { background: var(--primary-dark); }
+
+    /* ── Toast / Loading ── */
+    .toast {
+      position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.82); color: white; padding: 11px 22px;
+      border-radius: 24px; font-size: 14px; z-index: 300;
+      opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .loading-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 250;
+      align-items: center; justify-content: center;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 48px; height: 48px; border: 5px solid rgba(255,255,255,0.3);
+      border-top-color: white; border-radius: 50%; animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>&#128722; POSレジ</h1>
+  <div class="header-right">
+    <span class="header-time" id="headerTime"></span>
+    <span class="status-badge status-offline" id="statusBadge">
+      <span class="status-dot"></span><span id="statusText">オフライン</span>
+    </span>
+  </div>
+</div>
+
+<!-- Scan Section -->
+<div class="scan-section">
+  <div class="scan-row">
+    <button class="btn-scan" onclick="openScanner()">&#128247; スキャン</button>
+    <div class="manual-input">
+      <input type="text" id="barcodeInput" placeholder="バーコードを入力" inputmode="numeric"
+             onkeydown="if(event.key==='Enter')addByBarcode()">
+      <button class="btn-add" onclick="addByBarcode()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cart Section -->
+<div class="cart-section">
+  <div class="cart-header">
+    <span>カート</span>
+    <span id="cartCount">0点</span>
+  </div>
+  <div class="cart-list" id="cartList">
+    <div class="cart-empty">商品をスキャンしてください</div>
+  </div>
+</div>
+
+<!-- Checkout Section -->
+<div class="checkout-section">
+  <div class="total-row">
+    <span class="total-label">合計（税込）</span>
+    <span class="total-amount" id="totalAmount">¥0</span>
+  </div>
+  <div class="tax-row">
+    <span>消費税（10%）</span>
+    <span id="taxAmount">¥0</span>
+  </div>
+  <button class="btn-checkout" id="checkoutBtn" onclick="checkout()" disabled>会計する</button>
+</div>
+
+<!-- Scanner Modal -->
+<div class="modal-overlay" id="scannerModal">
+  <div class="scanner-container">
+    <div id="reader"></div>
+    <div style="text-align:center">
+      <button class="btn-close-scanner" onclick="closeScanner()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="receipt-modal" id="receiptModal">
+  <div class="receipt-card">
+    <div class="receipt-title">レシート</div>
+    <div class="receipt-date" id="receiptDate"></div>
+    <hr class="receipt-divider">
+    <div id="receiptItems"></div>
+    <hr class="receipt-divider">
+    <div class="receipt-row"><span>小計（税抜）</span><span id="receiptSubtotal"></span></div>
+    <div class="receipt-row"><span>消費税（10%）</span><span id="receiptTax"></span></div>
+    <div class="receipt-total"><span>合計</span><span id="receiptTotal"></span></div>
+    <button class="btn-close-receipt" onclick="closeReceipt()">閉じる（次の会計へ）</button>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+// ===== 設定定数（ここを変更してください） =====
+const GAS_URL  = "ここにGASのURLを入力";  // GASデプロイURL
+const TAX_RATE = 0.10;                     // 消費税率（10%）
+// ==============================================
+
+let cart = [];
+let qrScanner = null;
+
+// ── 時計 ──
+function updateClock() {
+  const d = new Date();
+  document.getElementById('headerTime').textContent =
+    d.toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── GAS疎通確認 ──
+async function checkGasConnection() {
+  if (GAS_URL === "ここにGASのURLを入力") return;
+  try {
+    const res = await fetch(`${GAS_URL}?action=ping`);
+    if (res.ok) setOnline(true);
+    else setOnline(false);
+  } catch { setOnline(false); }
+}
+function setOnline(ok) {
+  const badge = document.getElementById('statusBadge');
+  badge.className = `status-badge ${ok ? 'status-online' : 'status-offline'}`;
+  document.getElementById('statusText').textContent = ok ? 'オンライン' : 'オフライン';
+}
+checkGasConnection();
+
+// ── スキャナー ──
+function openScanner() {
+  document.getElementById('scannerModal').classList.add('active');
+  qrScanner = new Html5Qrcode("reader");
+  qrScanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 270, height: 150 } },
+    code => { closeScanner(); addProductToCart(code.trim()); },
+    () => {}
+  ).catch(() => { showToast('カメラにアクセスできません'); closeScanner(); });
+}
+function closeScanner() {
+  if (qrScanner) { qrScanner.stop().catch(() => {}); qrScanner = null; }
+  document.getElementById('scannerModal').classList.remove('active');
+}
+
+// ── 手動入力 ──
+function addByBarcode() {
+  const el = document.getElementById('barcodeInput');
+  const bc = el.value.trim();
+  if (!bc) return;
+  el.value = '';
+  addProductToCart(bc);
+}
+
+// ── 商品取得 ──
+async function addProductToCart(barcode) {
+  showLoading(true);
+  try {
+    let product;
+    if (GAS_URL === "ここにGASのURLを入力") {
+      product = demoProduct(barcode);
+    } else {
+      const res  = await fetch(`${GAS_URL}?action=getProduct&barcode=${encodeURIComponent(barcode)}`);
+      const data = await res.json();
+      if (!data.success) { showToast(`商品が見つかりません: ${barcode}`); return; }
+      product = data.product;
+    }
+    pushToCart(product);
+    showToast(`${product.name} を追加しました`);
+  } catch { showToast('通信エラーが発生しました'); }
+  finally  { showLoading(false); }
+}
+
+// GAS未設定時のデモ商品
+function demoProduct(barcode) {
+  const map = {
+    '4901085614761': { name: 'お茶 500ml',   price: 150 },
+    '4902102013963': { name: 'コーラ 350ml', price: 120 },
+    '4901777252256': { name: 'チョコレート', price: 200 },
+  };
+  const d = map[barcode] || { name: `商品(${barcode})`, price: 100 };
+  return { barcode, ...d };
+}
+
+// ── カート操作 ──
+function pushToCart(product) {
+  const ex = cart.find(i => i.barcode === product.barcode);
+  if (ex) ex.qty++;
+  else cart.push({ ...product, qty: 1 });
+  renderCart();
+}
+function updateQty(barcode, delta) {
+  const item = cart.find(i => i.barcode === barcode);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
+  renderCart();
+}
+function removeItem(barcode) {
+  cart = cart.filter(i => i.barcode !== barcode);
+  renderCart();
+}
+
+function renderCart() {
+  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+  const total    = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const tax      = Math.round(total - total / (1 + TAX_RATE));
+
+  document.getElementById('cartCount').textContent  = `${totalQty}点`;
+  document.getElementById('totalAmount').textContent = `¥${total.toLocaleString()}`;
+  document.getElementById('taxAmount').textContent   = `¥${tax.toLocaleString()}`;
+  document.getElementById('checkoutBtn').disabled    = cart.length === 0;
+
+  const list = document.getElementById('cartList');
+  if (cart.length === 0) {
+    list.innerHTML = '<div class="cart-empty">商品をスキャンしてください</div>';
+    return;
+  }
+  list.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="item-info">
+        <div class="item-name">${esc(item.name)}</div>
+        <div class="item-price">¥${item.price.toLocaleString()} × ${item.qty}</div>
+      </div>
+      <div class="item-qty">
+        <button class="btn-qty" onclick="updateQty('${esc(item.barcode)}',-1)">&#8722;</button>
+        <span class="qty-num">${item.qty}</span>
+        <button class="btn-qty" onclick="updateQty('${esc(item.barcode)}',1)">&#43;</button>
+      </div>
+      <div class="item-subtotal">¥${(item.price * item.qty).toLocaleString()}</div>
+      <button class="btn-delete" onclick="removeItem('${esc(item.barcode)}')">&#10005;</button>
+    </div>`).join('');
+}
+
+// ── 会計処理 ──
+async function checkout() {
+  if (cart.length === 0) return;
+  const total    = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const tax      = Math.round(total - total / (1 + TAX_RATE));
+  const subtotal = total - tax;
+  const now      = new Date();
+  const txId     = `TX-${now.getTime()}`;
+
+  showLoading(true);
+  try {
+    if (GAS_URL !== "ここにGASのURLを入力") {
+      const body = JSON.stringify({
+        action: 'recordSale',
+        transactionId: txId,
+        items: cart.map(i => ({ barcode: i.barcode, name: i.name, price: i.price, qty: i.qty, subtotal: i.price * i.qty })),
+        total, tax,
+        datetime: now.toISOString()
+      });
+      const res  = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || '記録失敗');
+    }
+    showReceipt({ items: [...cart], total, tax, subtotal, now, txId });
+    cart = [];
+    renderCart();
+  } catch { showToast('会計処理に失敗しました'); }
+  finally  { showLoading(false); }
+}
+
+// ── レシート ──
+function showReceipt({ items, total, tax, subtotal, now, txId }) {
+  document.getElementById('receiptDate').textContent =
+    `${now.toLocaleString('ja-JP')}　${txId}`;
+  document.getElementById('receiptItems').innerHTML = items.map(i => `
+    <div class="receipt-item">
+      <span class="receipt-item-name">${esc(i.name)}</span>
+      <span class="receipt-item-detail">¥${i.price.toLocaleString()} × ${i.qty} = ¥${(i.price * i.qty).toLocaleString()}</span>
+    </div>`).join('');
+  document.getElementById('receiptSubtotal').textContent = `¥${subtotal.toLocaleString()}`;
+  document.getElementById('receiptTax').textContent      = `¥${tax.toLocaleString()}`;
+  document.getElementById('receiptTotal').textContent    = `¥${total.toLocaleString()}`;
+  document.getElementById('receiptModal').classList.add('active');
+}
+function closeReceipt() {
+  document.getElementById('receiptModal').classList.remove('active');
+}
+
+// ── ヘルパー ──
+function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('active', v); }
+
+let _tt;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
 </html>
