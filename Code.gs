@@ -1,25 +1,25 @@
-// ===== Google Apps Script バックエンド =====
-// 使い方:
-//   1. https://script.google.com で新規プロジェクトを作成
-//   2. このコードを貼り付けて保存
-//   3. SPREADSHEET_ID をコピーしたスプレッドシートのIDに書き換える
-//   4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」
-//      実行ユーザー: 自分、アクセス: 全員
-//   5. デプロイURLを index.html の GAS_URL に貼り付ける
+// ===== Google Apps Script Backend =====
+// Setup instructions:
+//   1. Go to https://script.google.com and create a new project
+//   2. Paste this code and save
+//   3. Replace SPREADSHEET_ID with your Google Spreadsheet ID
+//   4. Deploy > New deployment > Web app
+//      Execute as: Me, Who has access: Anyone
+//   5. Paste the deployment URL into GAS_URL in index.html
 //
-// スプレッドシートのシート構成:
-//   「商品マスタ」シート:
-//     A列: バーコード  B列: 商品名  C列: 価格（税込）
-//     1行目はヘッダー行
-//   「売上記録」シート:
-//     自動生成されます（存在しない場合は作成されます）
+// Spreadsheet sheet structure:
+//   "Product Master" sheet:
+//     Column A: Barcode  Column B: Product Name  Column C: Price (VAT-inclusive)
+//     Row 1 is the header row
+//   "Sales Records" sheet:
+//     Auto-created if it does not exist
 
-// ===== 設定定数（変更してください） =====
-const SECRET_TOKEN      = "ここにトークンを入力";          // index.html の API_TOKEN と同じ値にする
-const SPREADSHEET_ID    = "ここにスプレッドシートIDを入力";
-const PRODUCT_SHEET     = "商品マスタ";
-const SALES_SHEET       = "売上記録";
-// =========================================
+// ===== Configuration (edit these values) =====
+const SECRET_TOKEN      = "Enter token here";              // Must match API_TOKEN in index.html
+const SPREADSHEET_ID    = "Enter spreadsheet ID here";
+const PRODUCT_SHEET     = "Product Master";
+const SALES_SHEET       = "Sales Records";
+// ==============================================
 
 function doGet(e) {
   if (e.parameter.token !== SECRET_TOKEN) {
@@ -36,7 +36,7 @@ function doGet(e) {
     return getProduct(e.parameter.barcode);
   }
 
-  return json({ success: false, message: "不明なアクション" });
+  return json({ success: false, message: "Unknown action" });
 }
 
 function doPost(e) {
@@ -46,22 +46,22 @@ function doPost(e) {
       return json({ success: false, message: "Unauthorized" });
     }
     if (payload.action === "recordSale") return recordSale(payload);
-    return json({ success: false, message: "不明なアクション" });
+    return json({ success: false, message: "Unknown action" });
   } catch (err) {
     return json({ success: false, message: err.message });
   }
 }
 
-// バーコードで商品マスタを検索
+// Look up a product by barcode in the Product Master sheet
 function getProduct(barcode) {
-  if (!barcode) return json({ success: false, message: "バーコードが未指定です" });
+  if (!barcode) return json({ success: false, message: "Barcode is required" });
 
   const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(PRODUCT_SHEET);
-  if (!sheet) return json({ success: false, message: `シート "${PRODUCT_SHEET}" が見つかりません` });
+  if (!sheet) return json({ success: false, message: `Sheet "${PRODUCT_SHEET}" not found` });
 
   const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {          // 1行目はヘッダー
+  for (let i = 1; i < data.length; i++) {   // Row 0 is the header
     if (String(data[i][0]).trim() === String(barcode).trim()) {
       return json({
         success: true,
@@ -70,18 +70,18 @@ function getProduct(barcode) {
     }
   }
 
-  return json({ success: false, message: "商品が見つかりません" });
+  return json({ success: false, message: "Product not found" });
 }
 
-// 売上を売上記録シートに書き込む
+// Append sale records to the Sales Records sheet
 function recordSale(payload) {
-  const ss        = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ss         = SpreadsheetApp.openById(SPREADSHEET_ID);
   let   salesSheet = ss.getSheetByName(SALES_SHEET);
 
-  // シートがなければ自動作成してヘッダーを設定
+  // Auto-create the sheet with headers if it doesn't exist
   if (!salesSheet) {
     salesSheet = ss.insertSheet(SALES_SHEET);
-    salesSheet.appendRow(["日時", "取引ID", "バーコード", "商品名", "単価", "数量", "小計", "合計（税込）", "消費税"]);
+    salesSheet.appendRow(["Date/Time", "Transaction ID", "Barcode", "Product Name", "Unit Price", "Qty", "Subtotal", "Total (VAT-incl.)", "VAT"]);
   }
 
   const datetime = new Date(payload.datetime);

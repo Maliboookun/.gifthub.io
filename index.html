@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>POSレジ</title>
+  <title>POS Register</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     :root {
@@ -202,11 +202,11 @@
 
 <!-- Header -->
 <div class="header">
-  <h1>&#128722; POSレジ</h1>
+  <h1>&#128722; POS Register</h1>
   <div class="header-right">
     <span class="header-time" id="headerTime"></span>
     <span class="status-badge status-offline" id="statusBadge">
-      <span class="status-dot"></span><span id="statusText">オフライン</span>
+      <span class="status-dot"></span><span id="statusText">Offline</span>
     </span>
   </div>
 </div>
@@ -214,11 +214,11 @@
 <!-- Scan Section -->
 <div class="scan-section">
   <div class="scan-row">
-    <button class="btn-scan" onclick="openScanner()">&#128247; スキャン</button>
+    <button class="btn-scan" onclick="openScanner()">&#128247; Scan</button>
     <div class="manual-input">
-      <input type="text" id="barcodeInput" placeholder="バーコードを入力" inputmode="numeric"
+      <input type="text" id="barcodeInput" placeholder="Enter barcode" inputmode="numeric"
              onkeydown="if(event.key==='Enter')addByBarcode()">
-      <button class="btn-add" onclick="addByBarcode()">追加</button>
+      <button class="btn-add" onclick="addByBarcode()">Add</button>
     </div>
   </div>
 </div>
@@ -226,25 +226,25 @@
 <!-- Cart Section -->
 <div class="cart-section">
   <div class="cart-header">
-    <span>カート</span>
-    <span id="cartCount">0点</span>
+    <span>Cart</span>
+    <span id="cartCount">0 items</span>
   </div>
   <div class="cart-list" id="cartList">
-    <div class="cart-empty">商品をスキャンしてください</div>
+    <div class="cart-empty">Scan a product to add</div>
   </div>
 </div>
 
 <!-- Checkout Section -->
 <div class="checkout-section">
   <div class="total-row">
-    <span class="total-label">合計（税込）</span>
-    <span class="total-amount" id="totalAmount">¥0</span>
+    <span class="total-label">Total (incl. VAT)</span>
+    <span class="total-amount" id="totalAmount">₱0</span>
   </div>
   <div class="tax-row">
-    <span>消費税（10%）</span>
-    <span id="taxAmount">¥0</span>
+    <span>VAT (12%)</span>
+    <span id="taxAmount">₱0</span>
   </div>
-  <button class="btn-checkout" id="checkoutBtn" onclick="checkout()" disabled>会計する</button>
+  <button class="btn-checkout" id="checkoutBtn" onclick="checkout()" disabled>Checkout</button>
 </div>
 
 <!-- Scanner Modal -->
@@ -252,7 +252,7 @@
   <div class="scanner-container">
     <div id="reader"></div>
     <div style="text-align:center">
-      <button class="btn-close-scanner" onclick="closeScanner()">キャンセル</button>
+      <button class="btn-close-scanner" onclick="closeScanner()">Cancel</button>
     </div>
   </div>
 </div>
@@ -260,15 +260,15 @@
 <!-- Receipt Modal -->
 <div class="receipt-modal" id="receiptModal">
   <div class="receipt-card">
-    <div class="receipt-title">レシート</div>
+    <div class="receipt-title">Receipt</div>
     <div class="receipt-date" id="receiptDate"></div>
     <hr class="receipt-divider">
     <div id="receiptItems"></div>
     <hr class="receipt-divider">
-    <div class="receipt-row"><span>小計（税抜）</span><span id="receiptSubtotal"></span></div>
-    <div class="receipt-row"><span>消費税（10%）</span><span id="receiptTax"></span></div>
-    <div class="receipt-total"><span>合計</span><span id="receiptTotal"></span></div>
-    <button class="btn-close-receipt" onclick="closeReceipt()">閉じる（次の会計へ）</button>
+    <div class="receipt-row"><span>Subtotal (excl. VAT)</span><span id="receiptSubtotal"></span></div>
+    <div class="receipt-row"><span>VAT (12%)</span><span id="receiptTax"></span></div>
+    <div class="receipt-total"><span>Total</span><span id="receiptTotal"></span></div>
+    <button class="btn-close-receipt" onclick="closeReceipt()">Close (Next Transaction)</button>
   </div>
 </div>
 
@@ -280,10 +280,10 @@
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-// ===== 設定定数（ここを変更してください） =====
-const GAS_URL   = "ここにGASのURLを入力";  // GASデプロイURL
-const API_TOKEN = "ここにトークンを入力";   // Code.gs の SECRET_TOKEN と同じ値にする
-const TAX_RATE  = 0.10;                    // 消費税率（10%）
+// ===== Configuration (edit these values) =====
+const GAS_URL   = "Enter GAS URL here";    // GAS deployment URL
+const API_TOKEN = "Enter token here";      // Must match SECRET_TOKEN in Code.gs
+const TAX_RATE  = 0.12;                    // VAT rate (12%)
 // ==============================================
 
 let cart = [];
@@ -293,14 +293,14 @@ let qrScanner = null;
 function updateClock() {
   const d = new Date();
   document.getElementById('headerTime').textContent =
-    d.toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    d.toLocaleString('en-PH', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 updateClock();
 setInterval(updateClock, 30000);
 
 // ── GAS疎通確認 ──
 async function checkGasConnection() {
-  if (GAS_URL === "ここにGASのURLを入力") return;
+  if (GAS_URL === "Enter GAS URL here") return;
   try {
     const res = await fetch(`${GAS_URL}?action=ping&token=${encodeURIComponent(API_TOKEN)}`);
     if (res.ok) setOnline(true);
@@ -310,7 +310,7 @@ async function checkGasConnection() {
 function setOnline(ok) {
   const badge = document.getElementById('statusBadge');
   badge.className = `status-badge ${ok ? 'status-online' : 'status-offline'}`;
-  document.getElementById('statusText').textContent = ok ? 'オンライン' : 'オフライン';
+  document.getElementById('statusText').textContent = ok ? 'Online' : 'Offline';
 }
 checkGasConnection();
 
@@ -323,7 +323,7 @@ function openScanner() {
     { fps: 10, qrbox: { width: 270, height: 150 } },
     code => { closeScanner(); addProductToCart(code.trim()); },
     () => {}
-  ).catch(() => { showToast('カメラにアクセスできません'); closeScanner(); });
+  ).catch(() => { showToast('Cannot access camera'); closeScanner(); });
 }
 function closeScanner() {
   if (qrScanner) { qrScanner.stop().catch(() => {}); qrScanner = null; }
@@ -344,28 +344,28 @@ async function addProductToCart(barcode) {
   showLoading(true);
   try {
     let product;
-    if (GAS_URL === "ここにGASのURLを入力") {
+    if (GAS_URL === "Enter GAS URL here") {
       product = demoProduct(barcode);
     } else {
       const res  = await fetch(`${GAS_URL}?action=getProduct&barcode=${encodeURIComponent(barcode)}&token=${encodeURIComponent(API_TOKEN)}`);
       const data = await res.json();
-      if (!data.success) { showToast(`商品が見つかりません: ${barcode}`); return; }
+      if (!data.success) { showToast(`Product not found: ${barcode}`); return; }
       product = data.product;
     }
     pushToCart(product);
-    showToast(`${product.name} を追加しました`);
-  } catch { showToast('通信エラーが発生しました'); }
+    showToast(`${product.name} added to cart`);
+  } catch { showToast('Connection error. Please try again.'); }
   finally  { showLoading(false); }
 }
 
-// GAS未設定時のデモ商品
+// Demo products used when GAS is not configured
 function demoProduct(barcode) {
   const map = {
-    '4901085614761': { name: 'お茶 500ml',   price: 150 },
-    '4902102013963': { name: 'コーラ 350ml', price: 120 },
-    '4901777252256': { name: 'チョコレート', price: 200 },
+    '4901085614761': { name: 'Green Tea 500ml',  price: 45 },
+    '4902102013963': { name: 'Cola 350ml',        price: 35 },
+    '4901777252256': { name: 'Chocolate Bar',     price: 60 },
   };
-  const d = map[barcode] || { name: `商品(${barcode})`, price: 100 };
+  const d = map[barcode] || { name: `Item (${barcode})`, price: 50 };
   return { barcode, ...d };
 }
 
@@ -393,28 +393,28 @@ function renderCart() {
   const total    = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const tax      = Math.round(total - total / (1 + TAX_RATE));
 
-  document.getElementById('cartCount').textContent  = `${totalQty}点`;
-  document.getElementById('totalAmount').textContent = `¥${total.toLocaleString()}`;
-  document.getElementById('taxAmount').textContent   = `¥${tax.toLocaleString()}`;
+  document.getElementById('cartCount').textContent  = `${totalQty} item(s)`;
+  document.getElementById('totalAmount').textContent = `₱${total.toLocaleString()}`;
+  document.getElementById('taxAmount').textContent   = `₱${tax.toLocaleString()}`;
   document.getElementById('checkoutBtn').disabled    = cart.length === 0;
 
   const list = document.getElementById('cartList');
   if (cart.length === 0) {
-    list.innerHTML = '<div class="cart-empty">商品をスキャンしてください</div>';
+    list.innerHTML = '<div class="cart-empty">Scan a product to add</div>';
     return;
   }
   list.innerHTML = cart.map(item => `
     <div class="cart-item">
       <div class="item-info">
         <div class="item-name">${esc(item.name)}</div>
-        <div class="item-price">¥${item.price.toLocaleString()} × ${item.qty}</div>
+        <div class="item-price">₱${item.price.toLocaleString()} × ${item.qty}</div>
       </div>
       <div class="item-qty">
         <button class="btn-qty" onclick="updateQty('${esc(item.barcode)}',-1)">&#8722;</button>
         <span class="qty-num">${item.qty}</span>
         <button class="btn-qty" onclick="updateQty('${esc(item.barcode)}',1)">&#43;</button>
       </div>
-      <div class="item-subtotal">¥${(item.price * item.qty).toLocaleString()}</div>
+      <div class="item-subtotal">₱${(item.price * item.qty).toLocaleString()}</div>
       <button class="btn-delete" onclick="removeItem('${esc(item.barcode)}')">&#10005;</button>
     </div>`).join('');
 }
@@ -430,7 +430,7 @@ async function checkout() {
 
   showLoading(true);
   try {
-    if (GAS_URL !== "ここにGASのURLを入力") {
+    if (GAS_URL !== "Enter GAS URL here") {
       const body = JSON.stringify({
         action: 'recordSale',
         token: API_TOKEN,
@@ -441,27 +441,27 @@ async function checkout() {
       });
       const res  = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
       const data = await res.json();
-      if (!data.success) throw new Error(data.message || '記録失敗');
+      if (!data.success) throw new Error(data.message || 'Recording failed');
     }
     showReceipt({ items: [...cart], total, tax, subtotal, now, txId });
     cart = [];
     renderCart();
-  } catch { showToast('会計処理に失敗しました'); }
+  } catch { showToast('Checkout failed. Please try again.'); }
   finally  { showLoading(false); }
 }
 
 // ── レシート ──
 function showReceipt({ items, total, tax, subtotal, now, txId }) {
   document.getElementById('receiptDate').textContent =
-    `${now.toLocaleString('ja-JP')}　${txId}`;
+    `${now.toLocaleString('en-PH')}  ${txId}`;
   document.getElementById('receiptItems').innerHTML = items.map(i => `
     <div class="receipt-item">
       <span class="receipt-item-name">${esc(i.name)}</span>
-      <span class="receipt-item-detail">¥${i.price.toLocaleString()} × ${i.qty} = ¥${(i.price * i.qty).toLocaleString()}</span>
+      <span class="receipt-item-detail">₱${i.price.toLocaleString()} × ${i.qty} = ₱${(i.price * i.qty).toLocaleString()}</span>
     </div>`).join('');
-  document.getElementById('receiptSubtotal').textContent = `¥${subtotal.toLocaleString()}`;
-  document.getElementById('receiptTax').textContent      = `¥${tax.toLocaleString()}`;
-  document.getElementById('receiptTotal').textContent    = `¥${total.toLocaleString()}`;
+  document.getElementById('receiptSubtotal').textContent = `₱${subtotal.toLocaleString()}`;
+  document.getElementById('receiptTax').textContent      = `₱${tax.toLocaleString()}`;
+  document.getElementById('receiptTotal').textContent    = `₱${total.toLocaleString()}`;
   document.getElementById('receiptModal').classList.add('active');
 }
 function closeReceipt() {
