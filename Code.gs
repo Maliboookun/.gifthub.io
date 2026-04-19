@@ -15,12 +15,17 @@
 //     自動生成されます（存在しない場合は作成されます）
 
 // ===== 設定定数（変更してください） =====
+const SECRET_TOKEN      = "ここにトークンを入力";          // index.html の API_TOKEN と同じ値にする
 const SPREADSHEET_ID    = "ここにスプレッドシートIDを入力";
 const PRODUCT_SHEET     = "商品マスタ";
 const SALES_SHEET       = "売上記録";
 // =========================================
 
 function doGet(e) {
+  if (e.parameter.token !== SECRET_TOKEN) {
+    return json({ success: false, message: "Unauthorized" });
+  }
+
   const action = e.parameter.action;
 
   if (action === "ping") {
@@ -37,6 +42,9 @@ function doGet(e) {
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
+    if (payload.token !== SECRET_TOKEN) {
+      return json({ success: false, message: "Unauthorized" });
+    }
     if (payload.action === "recordSale") return recordSale(payload);
     return json({ success: false, message: "不明なアクション" });
   } catch (err) {

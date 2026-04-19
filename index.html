@@ -281,8 +281,9 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // ===== 設定定数（ここを変更してください） =====
-const GAS_URL  = "ここにGASのURLを入力";  // GASデプロイURL
-const TAX_RATE = 0.10;                     // 消費税率（10%）
+const GAS_URL   = "ここにGASのURLを入力";  // GASデプロイURL
+const API_TOKEN = "ここにトークンを入力";   // Code.gs の SECRET_TOKEN と同じ値にする
+const TAX_RATE  = 0.10;                    // 消費税率（10%）
 // ==============================================
 
 let cart = [];
@@ -301,7 +302,7 @@ setInterval(updateClock, 30000);
 async function checkGasConnection() {
   if (GAS_URL === "ここにGASのURLを入力") return;
   try {
-    const res = await fetch(`${GAS_URL}?action=ping`);
+    const res = await fetch(`${GAS_URL}?action=ping&token=${encodeURIComponent(API_TOKEN)}`);
     if (res.ok) setOnline(true);
     else setOnline(false);
   } catch { setOnline(false); }
@@ -346,7 +347,7 @@ async function addProductToCart(barcode) {
     if (GAS_URL === "ここにGASのURLを入力") {
       product = demoProduct(barcode);
     } else {
-      const res  = await fetch(`${GAS_URL}?action=getProduct&barcode=${encodeURIComponent(barcode)}`);
+      const res  = await fetch(`${GAS_URL}?action=getProduct&barcode=${encodeURIComponent(barcode)}&token=${encodeURIComponent(API_TOKEN)}`);
       const data = await res.json();
       if (!data.success) { showToast(`商品が見つかりません: ${barcode}`); return; }
       product = data.product;
@@ -432,6 +433,7 @@ async function checkout() {
     if (GAS_URL !== "ここにGASのURLを入力") {
       const body = JSON.stringify({
         action: 'recordSale',
+        token: API_TOKEN,
         transactionId: txId,
         items: cart.map(i => ({ barcode: i.barcode, name: i.name, price: i.price, qty: i.qty, subtotal: i.price * i.qty })),
         total, tax,
